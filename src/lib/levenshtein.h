@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define PL_DEFAULT_THREAD_COUNT 16
+
 typedef struct leven_data
 {
     const char *first;
@@ -51,8 +53,8 @@ typedef struct leven_result
 leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second);
 void leven_data_destroy(leven_data_t *data);
 
-leven_status_t leven_compute_dist(size_t *result, leven_data_t *data, leven_comp_mode_t mode);
-leven_status_t leven_compute_trans(leven_result_t *result, leven_data_t *data, leven_comp_mode_t mode);
+leven_status_t leven_compute_dist(size_t *result, leven_data_t *data, uint8_t thread_count);
+leven_status_t leven_compute_trans(leven_result_t *result, leven_data_t *data, uint8_t thread_count);
 
 void leven_result_free(leven_result_t *result);
 

@@ -106,30 +106,30 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
 }
 
 // leven compute
-leven_status_t leven_compute_dist(size_t *result, leven_data_t *data, leven_comp_mode_t mode)
+leven_status_t leven_compute_dist(size_t *result, leven_data_t *data,  uint8_t thread_count)
 {
     if (!result || !data)
     {
         return null_parameters;
     }
 
-    leven_status_t comp_status = invalid_parameter;
-    switch (mode)
+    if(0 == thread_count)
     {
-    case single_threaded:
+        thread_count = PL_DEFAULT_THREAD_COUNT;
+    }
+
+    leven_status_t comp_status = success;
+
+    if(1 == thread_count)
+    {
         comp_status = leven_compute_dist_single(result, data);
-        break;
-    case multi_threaded:
-        comp_status = success;
-        break;
     }
-
-    if(comp_status != success)
+    else
     {
-        return comp_status;
+        // TODO multithread
     }
 
-    return success;
+    return comp_status;
 }
 
 void leven_result_free(leven_result_t *result)

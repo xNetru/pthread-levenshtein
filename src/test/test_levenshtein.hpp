@@ -19,7 +19,7 @@ private:
 public:
     void set(const std::string first, const std::string second);
 
-    void assert_dist(size_t expected, leven_comp_mode_t mode);
+    void assert_dist(size_t expected, uint8_t thread_count);
 };
 
 #endif // _PTHREAD_LEVENSHTEIN_TEST_LEVENSHTEIN_HPP
