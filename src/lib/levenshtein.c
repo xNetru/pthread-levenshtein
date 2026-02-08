@@ -6,9 +6,9 @@
 #define MIN(x, y) (x < y ? x : y)
 
 // general helpers
-static leven_status_t leven_validate_parameters(size_t *result, leven_data_t *data)
+static leven_status_t leven_data_validate(leven_data_t *data)
 {
-    if (!result || !data)
+    if (!data)
     {
         return null_parameters;
     }
@@ -147,7 +147,12 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
 // leven compute
 leven_status_t leven_compute_dist(size_t *result, leven_data_t *data)
 {
-    leven_status_t valid_status = leven_validate_parameters(result, data);
+    if(!result)
+    {
+        return null_parameters;
+    }
+
+    leven_status_t valid_status = leven_data_validate(data);
     if (success != valid_status)
     {
         return valid_status;
