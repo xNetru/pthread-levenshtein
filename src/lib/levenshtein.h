@@ -55,8 +55,8 @@ typedef struct leven_result
 leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second);
 void leven_data_destroy(leven_data_t *data);
 
-leven_status_t leven_compute_dist(leven_result_t *result, leven_data_t *data, leven_comp_mode_t mode);
-leven_status_t leven_compute_trans(size_t *result, leven_data_t *data, leven_comp_mode_t mode);
+leven_status_t leven_compute_dist(size_t *result, leven_data_t *data, leven_comp_mode_t mode);
+leven_status_t leven_compute_trans(leven_result_t *result, leven_data_t *data, leven_comp_mode_t mode);
 
 void leven_result_free(leven_result_t *result);
 
