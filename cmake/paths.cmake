@@ -1,0 +1,1 @@
+set(PL_LIB_PATH ${PROJECT_SOURCE_DIR}/src/lib)

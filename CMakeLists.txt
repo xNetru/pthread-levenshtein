@@ -15,4 +15,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED OFF)
 
+include(FetchContent)
+
+include(cmake/gtest_conf.cmake)
+include(CTest)
+
+include(cmake/boilerplate.cmake)
+include(cmake/paths.cmake)
+
 add_subdirectory(src)
