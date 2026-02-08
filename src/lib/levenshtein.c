@@ -6,6 +6,32 @@
 #define MIN(x, y) (x < y ? x : y)
 
 // general helpers
+static leven_status_t leven_validate_parameters(size_t *result, leven_data_t *data)
+{
+    if (!result || !data)
+    {
+        return null_parameters;
+    }
+
+    if (!data->first || !data->second || !data->dyn_table)
+    {
+        return null_parameters;
+    }
+
+    auto thread_count = data->thread_count;
+    if (0 == thread_count)
+    {
+        return invalid_parameter;
+    }
+
+    if (thread_count > 1 && !data->last_match)
+    {
+        return invalid_parameter;
+    }
+
+    return success;
+}
+
 static size_t leven_dyn_table_size(size_t first_size, size_t second_size)
 {
     return (first_size + 1) * (second_size + 1);
@@ -90,11 +116,6 @@ static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, con
 
 static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
 {
-    if (!result || !data)
-    {
-        return null_parameters;
-    }
-
     const char *first = data->first;
     size_t row_size = data->first_size + 1;
     const char *second = data->second;
@@ -126,9 +147,10 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
 // leven compute
 leven_status_t leven_compute_dist(size_t *result, leven_data_t *data)
 {
-    if (!result || !data)
+    leven_status_t valid_status = leven_validate_parameters(result, data);
+    if (success != valid_status)
     {
-        return null_parameters;
+        return valid_status;
     }
 
     leven_status_t comp_status = success;
