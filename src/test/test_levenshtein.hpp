@@ -13,11 +13,11 @@ extern "C"
 class TestLevenshtein : public testing::Test
 {
 private:
-    std::string first;
-    std::string second;
+    std::string row_string;
+    std::string column_string;
 
 public:
-    void set(const std::string first, const std::string second);
+    void set(const std::string row_string, const std::string column_string);
 
     void assert_dist(size_t expected, uint8_t thread_count);
 };

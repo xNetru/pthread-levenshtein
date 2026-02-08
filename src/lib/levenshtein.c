@@ -13,7 +13,7 @@ static leven_status_t leven_validate_parameters(size_t *result, leven_data_t *da
         return null_parameters;
     }
 
-    if (!data->first || !data->second || !data->dyn_table)
+    if (!data->row_string || !data->column_string || !data->dyn_table)
     {
         return null_parameters;
     }
@@ -32,9 +32,9 @@ static leven_status_t leven_validate_parameters(size_t *result, leven_data_t *da
     return success;
 }
 
-static size_t leven_dyn_table_size(size_t first_size, size_t second_size)
+static size_t leven_dyn_table_size(size_t row_string_size, size_t column_string_size)
 {
-    return (first_size + 1) * (second_size + 1);
+    return (row_string_size + 1) * (column_string_size + 1);
 }
 
 static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
@@ -43,17 +43,17 @@ static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
 }
 
 // leven data
-leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second, uint8_t thread_count)
+leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const char *column_string, uint8_t thread_count)
 {
-    if (!data || !first || !second)
+    if (!data || !row_string || !column_string)
     {
         return null_parameters;
     }
 
-    size_t first_size = strlen(first);
-    size_t second_size = strlen(second);
+    size_t row_string_size = strlen(row_string);
+    size_t column_string_size = strlen(column_string);
 
-    size_t dyn_table_count = leven_dyn_table_size(first_size, second_size);
+    size_t dyn_table_count = leven_dyn_table_size(row_string_size, column_string_size);
     uint32_t *dyn_table = (uint32_t *)malloc(sizeof(uint32_t) * dyn_table_count);
 
     if (!dyn_table)
@@ -77,12 +77,12 @@ leven_status_t leven_data_init(leven_data_t *data, const char *first, const char
         }
     }
 
-    data->first = first;
-    data->second = second;
+    data->row_string = row_string;
+    data->column_string = column_string;
     data->dyn_table = dyn_table;
     data->last_match = last_match;
-    data->first_size = first_size;
-    data->second_size = second_size;
+    data->row_string_size = row_string_size;
+    data->column_string_size = column_string_size;
     data->thread_count = thread_count;
 
     return success;
@@ -99,14 +99,14 @@ void leven_data_destroy(leven_data_t *data)
 }
 
 // leven dist single threaded
-static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, const char *first, const char *second, size_t i, size_t j, size_t row_size)
+static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
 {
     size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
     size_t ind10 = leven_2d_to_1d_index(i - 1, j, row_size);
     size_t ind11 = leven_2d_to_1d_index(i - 1, j - 1, row_size);
 
     uint32_t leven_dist = dyn_table[ind11];
-    if (first[i - 1] != second[j - 1])
+    if (row_string[i - 1] != column_string[j - 1])
     {
         leven_dist++;
     }
@@ -116,10 +116,10 @@ static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, con
 
 static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
 {
-    const char *first = data->first;
-    size_t row_size = data->first_size + 1;
-    const char *second = data->second;
-    size_t column_size = data->second_size + 1;
+    const char *row_string = data->row_string;
+    size_t row_size = data->row_string_size + 1;
+    const char *column_string = data->column_string;
+    size_t column_size = data->column_string_size + 1;
     uint32_t *dyn_table = data->dyn_table;
 
     for (size_t j = 0; j < row_size; j++)
@@ -135,7 +135,7 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
         for (size_t j = 1; j < row_size; j++)
         {
             ind = leven_2d_to_1d_index(i, j, row_size);
-            dyn_table[ind] = leven_compute_for_prefixes_single(dyn_table, first, second, i, j, row_size);
+            dyn_table[ind] = leven_compute_for_prefixes_single(dyn_table, row_string, column_string, i, j, row_size);
         }
     }
 

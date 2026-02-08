@@ -8,12 +8,12 @@
 
 typedef struct leven_data
 {
-    const char *first;
-    const char *second;
+    const char *row_string;
+    const char *column_string;
     uint32_t *dyn_table;
     size_t *last_match;
-    size_t first_size;
-    size_t second_size;
+    size_t row_string_size;
+    size_t column_string_size;
     uint8_t thread_count;
 } leven_data_t;
 
@@ -28,7 +28,7 @@ typedef enum leven_status
     error,
 } leven_status_t;
 
-leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second, uint8_t thread_count);
+leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const char *column_string, uint8_t thread_count);
 void leven_data_destroy(leven_data_t *data);
 
 leven_status_t leven_compute_dist(size_t *result, leven_data_t *data);

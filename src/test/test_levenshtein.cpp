@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include "test_levenshtein.hpp"
 
-void TestLevenshtein::set(const std::string first, const std::string second)
+void TestLevenshtein::set(const std::string row_string, const std::string column_string)
 {
-    this->first = first;
-    this->second = second;
+    this->row_string = row_string;
+    this->column_string = column_string;
 }
 
 void TestLevenshtein::assert_dist(size_t expected, uint8_t thread_count)
@@ -12,7 +12,7 @@ void TestLevenshtein::assert_dist(size_t expected, uint8_t thread_count)
     leven_data_t ldata;
     leven_status_t status;
 
-    status = leven_data_init(&ldata, first.c_str(), second.c_str(), thread_count);
+    status = leven_data_init(&ldata, row_string.c_str(), column_string.c_str(), thread_count);
     EXPECT_EQ(status, success);
 
     size_t result;
