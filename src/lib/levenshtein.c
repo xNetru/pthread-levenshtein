@@ -48,3 +48,13 @@ void leven_data_destroy(leven_data_t *data)
 
     free(data->dyn_table);
 }
+
+void leven_result_free(leven_result_t *result)
+{
+    if (!result || !result->trans_table)
+    {
+        return;
+    }
+
+    free(result->trans_table);
+}
