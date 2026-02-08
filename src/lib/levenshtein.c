@@ -1,12 +1,22 @@
 #include "levenshtein.h"
 
+#include <stdlib.h>
 #include <string.h>
 
+#define MIN(x, y) (x < y ? x : y)
+
+// general helpers
 static size_t leven_dyn_table_size(size_t first_size, size_t second_size)
 {
     return (first_size + 1) * (second_size + 1);
 }
 
+static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
+{
+    return row * row_size + column;
+}
+
+// leven data
 leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second)
 {
     if (!data || !first || !second)
@@ -14,13 +24,8 @@ leven_status_t leven_data_init(leven_data_t *data, const char *first, const char
         return null_parameters;
     }
 
-    size_t first_size = strlen_s(first, PL_MAX_WORD_SIZE);
-    size_t second_size = strlen_s(second, PL_MAX_WORD_SIZE);
-
-    if (first_size == PL_MAX_WORD_SIZE || second == PL_MAX_WORD_SIZE)
-    {
-        return max_word_size_exceeded;
-    }
+    size_t first_size = strlen(first);
+    size_t second_size = strlen(second);
 
     size_t dyn_table_count = leven_dyn_table_size(first_size, second_size);
     uint32_t *dyn_table = (uint32_t *)malloc(sizeof(uint32_t) * dyn_table_count);
@@ -46,7 +51,85 @@ void leven_data_destroy(leven_data_t *data)
         return;
     }
 
-    free(data->dyn_table);
+    free((void *)(data->dyn_table));
+}
+
+// leven dist single threaded
+static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, const char *first, const char *second, size_t i, size_t j, size_t row_size)
+{
+    size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
+    size_t ind10 = leven_2d_to_1d_index(i - 1, j, row_size);
+    size_t ind11 = leven_2d_to_1d_index(i - 1, j - 1, row_size);
+
+    uint32_t leven_dist = dyn_table[ind11];
+    if (first[i - 1] != second[j - 1])
+    {
+        leven_dist++;
+    }
+
+    return MIN(leven_dist, MIN(dyn_table[ind01], dyn_table[ind10]) + 1);
+}
+
+static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
+{
+    if (!result || !data)
+    {
+        return null_parameters;
+    }
+
+    const char *first = data->first;
+    size_t row_size = data->first_size + 1;
+    const char *second = data->second;
+    size_t column_size = data->second_size + 1;
+    uint32_t *dyn_table = data->dyn_table;
+
+    for (size_t j = 0; j < row_size; j++)
+    {
+        size_t ind = leven_2d_to_1d_index(0, j, row_size);
+        dyn_table[ind] = j;
+    }
+
+    for (size_t i = 1; i < column_size; i++)
+    {
+        size_t ind = leven_2d_to_1d_index(i, 0, row_size);
+        dyn_table[ind] = i;
+        for (size_t j = 1; j < row_size; j++)
+        {
+            ind = leven_2d_to_1d_index(i, j, row_size);
+            dyn_table[ind] = leven_compute_for_prefixes_single(dyn_table, first, second, i, j, row_size);
+        }
+    }
+
+    size_t last_ind = row_size * column_size - 1;
+    *result = dyn_table[last_ind];
+    return success;
+}
+
+// leven compute
+leven_status_t leven_compute_dist(size_t *result, leven_data_t *data, leven_comp_mode_t mode)
+{
+    if (!result || !data)
+    {
+        return null_parameters;
+    }
+
+    leven_status_t comp_status = invalid_parameter;
+    switch (mode)
+    {
+    case single_threaded:
+        comp_status = leven_compute_dist_single(result, data);
+        break;
+    case multi_threaded:
+        comp_status = success;
+        break;
+    }
+
+    if(comp_status != success)
+    {
+        return comp_status;
+    }
+
+    return success;
 }
 
 void leven_result_free(leven_result_t *result)
@@ -56,5 +139,5 @@ void leven_result_free(leven_result_t *result)
         return;
     }
 
-    free(result->trans_table);
+    free((void *)(result->trans_table));
 }

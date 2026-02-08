@@ -4,15 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef PL_MAX_WORD_SIZE
-#define PL_MAX_WORD_SIZE 64 * 1024
-#endif
-
 typedef struct leven_data
 {
     const char *first;
     const char *second;
-    const uint32_t *dyn_table;
+    uint32_t *dyn_table;
     size_t first_size;
     size_t second_size;
 } leven_data_t;
@@ -23,7 +19,7 @@ typedef enum leven_status
     success = 0,
     // on error
     null_parameters,
-    max_word_size_exceeded,
+    invalid_parameter,
     malloc_failure,
     error,
 } leven_status_t;
