@@ -99,7 +99,7 @@ void leven_data_destroy(leven_data_t *data)
 }
 
 // leven dist single threaded
-static uint32_t leven_compute_for_prefixes_single(const uint32_t *dyn_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
+static uint32_t leven_compute_for_index_single(const uint32_t *dyn_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
 {
     size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
     size_t ind10 = leven_2d_to_1d_index(i - 1, j, row_size);
@@ -135,7 +135,7 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
         for (size_t j = 1; j < row_size; j++)
         {
             ind = leven_2d_to_1d_index(i, j, row_size);
-            dyn_table[ind] = leven_compute_for_prefixes_single(dyn_table, row_string, column_string, i, j, row_size);
+            dyn_table[ind] = leven_compute_for_index_single(dyn_table, row_string, column_string, i, j, row_size);
         }
     }
 
