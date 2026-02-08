@@ -1,14 +1,10 @@
 #include <gtest/gtest.h>
 #include "test_levenshtein.hpp"
 
-void TestLevenshtein::set_first(const std::string s)
+void TestLevenshtein::set(const std::string first, const std::string second)
 {
-    first = s;
-}
-
-void TestLevenshtein::set_second(const std::string s)
-{
-    second = s;
+    this->first = first;
+    this->second = second;
 }
 
 void TestLevenshtein::assert_dist(size_t expected, leven_comp_mode_t mode)
@@ -29,21 +25,18 @@ void TestLevenshtein::assert_dist(size_t expected, leven_comp_mode_t mode)
 
 TEST_F(TestLevenshtein, EqualLengthSingleDistPositive)
 {
-    this->set_first("abba");
-    this->set_second("baba");
+    this->set("abba", "baba");
     this->assert_dist(2, single_threaded);
 }
 
 TEST_F(TestLevenshtein, DifferentLengthSingleDistPositive)
 {
-    this->set_first("abba");
-    this->set_second("abaca");
+    this->set("abba", "abaca");
     this->assert_dist(2, single_threaded);
 }
 
 TEST_F(TestLevenshtein, EmptyWordSingleDistPositive)
 {
-    this->set_first("");
-    this->set_second("aaaaaa");
+    this->set("", "aaaaaa");
     this->assert_dist(6, single_threaded);
 }

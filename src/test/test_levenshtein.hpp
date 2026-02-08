@@ -17,8 +17,7 @@ private:
     std::string second;
 
 public:
-    void set_first(const std::string s);
-    void set_second(const std::string s);
+    void set(const std::string first, const std::string second);
 
     void assert_dist(size_t expected, leven_comp_mode_t mode);
 };
