@@ -17,7 +17,7 @@ static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
 }
 
 // leven data
-leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second)
+leven_status_t leven_data_init(leven_data_t *data, const char *first, const char *second, uint8_t thread_count)
 {
     if (!data || !first || !second)
     {
@@ -35,11 +35,29 @@ leven_status_t leven_data_init(leven_data_t *data, const char *first, const char
         return malloc_failure;
     }
 
+    size_t *last_match = NULL;
+    if (0 == thread_count)
+    {
+        thread_count = PL_DEFAULT_THREAD_COUNT;
+    }
+
+    if (thread_count > 1)
+    {
+        last_match = (size_t *)malloc(sizeof(size_t) * dyn_table_count);
+        if (!last_match)
+        {
+            free(dyn_table);
+            return malloc_failure;
+        }
+    }
+
     data->first = first;
-    data->first_size = first_size;
     data->second = second;
-    data->second_size = second_size;
     data->dyn_table = dyn_table;
+    data->last_match = last_match;
+    data->first_size = first_size;
+    data->second_size = second_size;
+    data->thread_count = thread_count;
 
     return success;
 }
@@ -106,21 +124,16 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
 }
 
 // leven compute
-leven_status_t leven_compute_dist(size_t *result, leven_data_t *data,  uint8_t thread_count)
+leven_status_t leven_compute_dist(size_t *result, leven_data_t *data)
 {
     if (!result || !data)
     {
         return null_parameters;
     }
 
-    if(0 == thread_count)
-    {
-        thread_count = PL_DEFAULT_THREAD_COUNT;
-    }
-
     leven_status_t comp_status = success;
 
-    if(1 == thread_count)
+    if (1 == data->thread_count)
     {
         comp_status = leven_compute_dist_single(result, data);
     }
@@ -130,14 +143,4 @@ leven_status_t leven_compute_dist(size_t *result, leven_data_t *data,  uint8_t t
     }
 
     return comp_status;
-}
-
-void leven_result_free(leven_result_t *result)
-{
-    if (!result || !result->trans_table)
-    {
-        return;
-    }
-
-    free((void *)(result->trans_table));
 }

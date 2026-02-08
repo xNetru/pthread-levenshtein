@@ -12,11 +12,11 @@ void TestLevenshtein::assert_dist(size_t expected, uint8_t thread_count)
     leven_data_t ldata;
     leven_status_t status;
 
-    status = leven_data_init(&ldata, first.c_str(), second.c_str());
+    status = leven_data_init(&ldata, first.c_str(), second.c_str(), thread_count);
     EXPECT_EQ(status, success);
 
     size_t result;
-    status = leven_compute_dist(&result, &ldata, thread_count);
+    status = leven_compute_dist(&result, &ldata);
     EXPECT_EQ(status, success);
     EXPECT_EQ(result, expected);
 
