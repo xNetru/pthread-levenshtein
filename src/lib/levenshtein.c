@@ -19,7 +19,7 @@ static leven_status_t leven_data_validate(leven_data_t *data)
         return null_parameters;
     }
 
-    if (!data->row_string || !data->column_string || !data->dyn_table)
+    if (!data->row_string || !data->column_string || !data->dist_table)
     {
         return null_parameters;
     }
@@ -38,7 +38,7 @@ static leven_status_t leven_data_validate(leven_data_t *data)
     return success;
 }
 
-static size_t leven_dyn_table_size(size_t row_string_size, size_t column_string_size)
+static size_t leven_dist_table_size(size_t row_string_size, size_t column_string_size)
 {
     return (row_string_size + 1) * (column_string_size + 1);
 }
@@ -59,10 +59,10 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const
     size_t row_string_size = strlen(row_string);
     size_t column_string_size = strlen(column_string);
 
-    size_t dyn_table_count = leven_dyn_table_size(row_string_size, column_string_size);
-    uint32_t *dyn_table = (uint32_t *)malloc(sizeof(uint32_t) * dyn_table_count);
+    size_t dist_table_count = leven_dist_table_size(row_string_size, column_string_size);
+    uint32_t *dist_table = (uint32_t *)malloc(sizeof(uint32_t) * dist_table_count);
 
-    if (!dyn_table)
+    if (!dist_table)
     {
         return malloc_failure;
     }
@@ -75,17 +75,17 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const
 
     if (thread_count > 1)
     {
-        last_match = (size_t *)malloc(sizeof(size_t) * dyn_table_count);
+        last_match = (size_t *)malloc(sizeof(size_t) * dist_table_count);
         if (!last_match)
         {
-            free(dyn_table);
+            free(dist_table);
             return malloc_failure;
         }
     }
 
     data->row_string = row_string;
     data->column_string = column_string;
-    data->dyn_table = dyn_table;
+    data->dist_table = dist_table;
     data->last_match = last_match;
     data->row_string_size = row_string_size;
     data->column_string_size = column_string_size;
@@ -96,28 +96,28 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const
 
 void leven_data_destroy(leven_data_t *data)
 {
-    if (!data || !data->dyn_table)
+    if (!data || !data->dist_table)
     {
         return;
     }
 
-    free((void *)(data->dyn_table));
+    free((void *)(data->dist_table));
 }
 
 // leven dist single threaded
-static uint32_t leven_compute_for_index_single(const uint32_t *dyn_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
+static uint32_t leven_compute_for_index_single(const uint32_t *dist_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
 {
     size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
     size_t ind10 = leven_2d_to_1d_index(i - 1, j, row_size);
     size_t ind11 = leven_2d_to_1d_index(i - 1, j - 1, row_size);
 
-    uint32_t leven_dist = dyn_table[ind11];
+    uint32_t leven_dist = dist_table[ind11];
     if (row_string[i - 1] != column_string[j - 1])
     {
         leven_dist++;
     }
 
-    return MIN(leven_dist, MIN(dyn_table[ind01], dyn_table[ind10]) + 1);
+    return MIN(leven_dist, MIN(dist_table[ind01], dist_table[ind10]) + 1);
 }
 
 static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
@@ -126,27 +126,27 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
     size_t row_size = data->row_string_size + 1;
     const char *column_string = data->column_string;
     size_t column_size = data->column_string_size + 1;
-    uint32_t *dyn_table = data->dyn_table;
+    uint32_t *dist_table = data->dist_table;
 
     for (size_t j = 0; j < row_size; j++)
     {
         size_t ind = leven_2d_to_1d_index(0, j, row_size);
-        dyn_table[ind] = j;
+        dist_table[ind] = j;
     }
 
     for (size_t i = 1; i < column_size; i++)
     {
         size_t ind = leven_2d_to_1d_index(i, 0, row_size);
-        dyn_table[ind] = i;
+        dist_table[ind] = i;
         for (size_t j = 1; j < row_size; j++)
         {
             ind = leven_2d_to_1d_index(i, j, row_size);
-            dyn_table[ind] = leven_compute_for_index_single(dyn_table, row_string, column_string, i, j, row_size);
+            dist_table[ind] = leven_compute_for_index_single(dist_table, row_string, column_string, i, j, row_size);
         }
     }
 
     size_t last_ind = row_size * column_size - 1;
-    *result = dyn_table[last_ind];
+    *result = dist_table[last_ind];
     return success;
 }
 
@@ -294,8 +294,8 @@ cleanup:
     return status;
 }
 
-void leven_fill_dyn_table_row(size_t i, const char *row_string, const char *column_string,
-                              size_t row_size, size_t column_size, uint32_t *dyn_table, size_t *last_match,
+void leven_fill_dist_table_row(size_t i, const char *row_string, const char *column_string,
+                              size_t row_size, size_t column_size, uint32_t *dist_table, size_t *last_match,
                               pthread_barrier_t *barrier, size_t start_index, size_t end_index)
 {
     if (0 == i)
@@ -303,7 +303,7 @@ void leven_fill_dyn_table_row(size_t i, const char *row_string, const char *colu
         for (size_t j = start_index; j < end_index; j++)
         {
             size_t ind = leven_2d_to_1d_index(0, j, row_size);
-            dyn_table[ind] = j;
+            dist_table[ind] = j;
         }
     }
     else
@@ -315,18 +315,18 @@ void leven_fill_dyn_table_row(size_t i, const char *row_string, const char *colu
             size_t ind11 = leven_2d_to_1d_index(i - 1, j - 1, row_size);
             if (j == 0)
             {
-                dyn_table[ind] = i;
+                dist_table[ind] = i;
             }
             else if (row_string[j - 1] == column_string[i - 1])
             {
-                dyn_table[ind] = MIN(dyn_table[ind11], dyn_table[ind10] + 1);
+                dist_table[ind] = MIN(dist_table[ind11], dist_table[ind10] + 1);
             }
             else
             {
-                size_t min_dist = MIN(dyn_table[ind11], dyn_table[ind10]) + 1;
+                size_t min_dist = MIN(dist_table[ind11], dist_table[ind10]) + 1;
                 size_t k = j - last_match[ind];
                 size_t ind1k1 = leven_2d_to_1d_index(i - 1, j - k - 1, row_size);
-                dyn_table[ind] = MIN(dyn_table[ind1k1] + k, min_dist);
+                dist_table[ind] = MIN(dist_table[ind1k1] + k, min_dist);
             }
         }
     }
@@ -334,7 +334,7 @@ void leven_fill_dyn_table_row(size_t i, const char *row_string, const char *colu
     pthread_barrier_wait(barrier);
 }
 
-static void *leven_fill_dyn_table_routine(void *arg)
+static void *leven_fill_dist_table_routine(void *arg)
 {
     leven_thread_data_t *tdata = (leven_thread_data_t *)arg;
     leven_data_t *data = tdata->data;
@@ -350,7 +350,7 @@ static void *leven_fill_dyn_table_routine(void *arg)
     size_t row_size = data->row_string_size + 1;
     size_t column_size = data->column_string_size + 1;
     size_t *last_match = data->last_match;
-    uint32_t *dyn_table = data->dyn_table;
+    uint32_t *dist_table = data->dist_table;
     uint8_t thread_count = data->thread_count;
     uint8_t thread_id = tdata->thread_id;
 
@@ -373,15 +373,15 @@ static void *leven_fill_dyn_table_routine(void *arg)
 
     for (size_t i = 0; i < column_size; i++)
     {
-        leven_fill_dyn_table_row(i, row_string, column_string,
-                                 row_size, column_size, dyn_table,
+        leven_fill_dist_table_row(i, row_string, column_string,
+                                 row_size, column_size, dist_table,
                                  last_match, barrier, start_index, end_index);
     }
 
     return NULL;
 }
 
-static leven_status_t leven_fill_dyn_table(leven_data_t *data)
+static leven_status_t leven_fill_dist_table(leven_data_t *data)
 {
     // truncate number of threads to at most row size
     uint8_t thread_count_backup = data->thread_count;
@@ -415,7 +415,7 @@ static leven_status_t leven_fill_dyn_table(leven_data_t *data)
     }
 
     status =
-        leven_dispatch_threads(data, leven_fill_dyn_table_routine, tdata);
+        leven_dispatch_threads(data, leven_fill_dist_table_routine, tdata);
 
     if (0 != pthread_barrier_destroy(&barrier))
     {
@@ -437,16 +437,16 @@ static leven_status_t leven_compute_dist_multi(size_t *result, leven_data_t *dat
         return status;
     }
 
-    if (success != (status = leven_fill_dyn_table(data)))
+    if (success != (status = leven_fill_dist_table(data)))
     {
         return status;
     }
 
-    uint32_t *dyn_table = data->dyn_table;
+    uint32_t *dist_table = data->dist_table;
     size_t row_size = data->row_string_size + 1;
     size_t column_size = data->column_string_size + 1;
     size_t last_ind = row_size * column_size - 1;
-    *result = dyn_table[last_ind];
+    *result = dist_table[last_ind];
 
     return success;
 }

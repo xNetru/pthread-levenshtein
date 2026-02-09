@@ -10,7 +10,7 @@ typedef struct leven_data
 {
     const char *row_string;
     const char *column_string;
-    uint32_t *dyn_table;
+    uint32_t *dist_table;
     size_t *last_match;
     size_t row_string_size;
     size_t column_string_size;
