@@ -27,6 +27,16 @@ TEST_F(TestLevenshtein, EqualLengthSingleDistPositive)
 {
     this->set("abba", "baba");
     this->assert_dist(2, 1);
+
+    this->set("ababab", "bababa");
+    this->assert_dist(2, 1);
+
+    this->set("abcabc", "aaabbb");
+    this->assert_dist(4, 1);
+
+    this->set("abcabcabcabcabcabcabcabcabcabcabcabcabcabcabc",
+              "aaabbbcccaaabbbcccaaabbbcccaaabbbcccaaabbbccc");
+    this->assert_dist(30, 1);
 }
 
 TEST_F(TestLevenshtein, DifferentLengthSingleDistPositive)
@@ -39,4 +49,50 @@ TEST_F(TestLevenshtein, EmptyWordSingleDistPositive)
 {
     this->set("", "aaaaaa");
     this->assert_dist(6, 1);
+
+    this->set("", "");
+    this->assert_dist(0, 1);
+}
+
+TEST_F(TestLevenshtein, SameWordSingleDistPositive)
+{
+    this->set("aaaaaaaab", "aaaaaaaab");
+    this->assert_dist(0, 1);
+}
+
+TEST_F(TestLevenshtein, EqualLengthMultiDistPositive)
+{
+    this->set("abba", "baba");
+    this->assert_dist(2, 2);
+
+    this->set("ababab", "bababa");
+    this->assert_dist(2, 2);
+
+    this->set("abcabc", "aaabbb");
+    this->assert_dist(4, 2);
+
+    this->set("abcabcabcabcabcabcabcabcabcabcabcabcabcabcabc",
+              "aaabbbcccaaabbbcccaaabbbcccaaabbbcccaaabbbccc");
+    this->assert_dist(30, 2);
+}
+
+TEST_F(TestLevenshtein, DifferentLengthMultiDistPositive)
+{
+    this->set("abba", "abaca");
+    this->assert_dist(2, 2);
+}
+
+TEST_F(TestLevenshtein, EmptyWordMultiDistPositive)
+{
+    this->set("", "aaaaaa");
+    this->assert_dist(6, 2);
+
+    this->set("", "");
+    this->assert_dist(0, 2);
+}
+
+TEST_F(TestLevenshtein, SameWordMultiDistPositive)
+{
+    this->set("aaaaaaaab", "aaaaaaaab");
+    this->assert_dist(0, 5);
 }

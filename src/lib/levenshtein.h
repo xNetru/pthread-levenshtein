@@ -25,6 +25,8 @@ typedef enum leven_status
     null_parameters,
     invalid_parameter,
     malloc_failure,
+    pthread_error,
+    pthread_barrier_error,
     error,
 } leven_status_t;
 
