@@ -340,13 +340,38 @@ void leven_fill_dist_table_row(size_t i, const char *row_string, const char *col
     pthread_barrier_wait(barrier);
 }
 
+static void leven_compute_thread_subrange(size_t total_range, uint8_t thread_index,
+                                          uint8_t thread_count, size_t *start,
+                                          size_t *end)
+{
+    size_t subrange_size = total_range / thread_count;
+    size_t subrange_remainder = total_range % thread_count;
+
+    size_t start_tmp;
+    size_t end_tmp;
+    if (thread_index < subrange_remainder)
+    {
+        start_tmp = thread_index * (subrange_size + 1);
+        end_tmp = start_tmp + subrange_size + 1;
+    }
+    else
+    {
+        start_tmp = subrange_remainder * (subrange_size + 1) +
+                    (thread_index - subrange_remainder) * subrange_size;
+        end_tmp = start_tmp + subrange_size;
+    }
+
+    *start = start_tmp;
+    *end = end_tmp;
+}
+
 static void *leven_fill_dist_table_routine(void *arg)
 {
     leven_thread_data_t *tdata = (leven_thread_data_t *)arg;
     leven_data_t *data = tdata->data;
     pthread_barrier_t *barrier = tdata->barrier;
 
-    if (!tdata || success != leven_data_validate(tdata->data) || !barrier)
+    if (!tdata || !barrier || success != leven_data_validate(tdata->data))
     {
         PL_ERROR("invalid thread data");
     }
@@ -360,22 +385,9 @@ static void *leven_fill_dist_table_routine(void *arg)
     uint8_t thread_count = data->thread_count;
     uint8_t thread_index = tdata->thread_index;
 
-    size_t range = row_size / thread_count;
-    size_t range_remainder = row_size % thread_count;
-
     size_t start_index;
     size_t end_index;
-    if (thread_index < range_remainder)
-    {
-        start_index = thread_index * (range + 1);
-        end_index = start_index + range + 1;
-    }
-    else
-    {
-        start_index =
-            range_remainder * (range + 1) + (thread_index - range_remainder) * range;
-        end_index = start_index + range;
-    }
+    leven_compute_thread_subrange(row_size, thread_index, thread_count, &start_index, &end_index);
 
     for (size_t i = 0; i < column_size; i++)
     {
@@ -449,9 +461,8 @@ static leven_status_t leven_compute_dist_multi(size_t *result, leven_data_t *dat
     }
 
     uint32_t *dist_table = data->dist_table;
-    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
-    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
-    size_t last_ind = row_size * column_size - 1;
+    size_t last_ind =
+        leven_dist_table_size(data->row_string_size, data->column_string_size) - 1;
     *result = dist_table[last_ind];
 
     return success;
@@ -465,21 +476,16 @@ leven_status_t leven_compute_dist(size_t *result, leven_data_t *data)
         return null_parameters;
     }
 
-    leven_status_t valid_status = leven_data_validate(data);
-    if (success != valid_status)
+    leven_status_t status = leven_data_validate(data);
+    if (success != status)
     {
-        return valid_status;
+        return status;
     }
 
-    leven_status_t comp_status = success;
     if (1 == data->thread_count)
     {
-        comp_status = leven_compute_dist_single(result, data);
-    }
-    else
-    {
-        comp_status = leven_compute_dist_multi(result, data);
+        return leven_compute_dist_single(result, data);
     }
 
-    return comp_status;
+    return leven_compute_dist_multi(result, data);
 }
