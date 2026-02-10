@@ -295,8 +295,8 @@ cleanup:
 }
 
 void leven_fill_dist_table_row(size_t i, const char *row_string, const char *column_string,
-                              size_t row_size, size_t column_size, uint32_t *dist_table, size_t *last_match,
-                              pthread_barrier_t *barrier, size_t start_index, size_t end_index)
+                               size_t row_size, uint32_t *dist_table, size_t *last_match,
+                               pthread_barrier_t *barrier, size_t start_index, size_t end_index)
 {
     if (0 == i)
     {
@@ -374,8 +374,8 @@ static void *leven_fill_dist_table_routine(void *arg)
     for (size_t i = 0; i < column_size; i++)
     {
         leven_fill_dist_table_row(i, row_string, column_string,
-                                 row_size, column_size, dist_table,
-                                 last_match, barrier, start_index, end_index);
+                                  row_size, dist_table, last_match,
+                                  barrier, start_index, end_index);
     }
 
     return NULL;
