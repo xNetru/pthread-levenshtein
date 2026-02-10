@@ -186,7 +186,7 @@ static void leven_join_threads(pthread_t *tid, uint8_t thread_count)
 
 typedef struct leven_thread_data
 {
-    uint8_t thread_id;
+    uint8_t thread_index;
     leven_data_t *data;
     pthread_barrier_t *barrier;
 } leven_thread_data_t;
@@ -262,7 +262,7 @@ static void *leven_fill_last_match_routine(void *arg)
     size_t *last_match = data->last_match;
     uint8_t thread_count = data->thread_count;
 
-    for (size_t i = tdata->thread_id; i < column_size; i += thread_count)
+    for (size_t i = tdata->thread_index; i < column_size; i += thread_count)
     {
         leven_fill_last_match_row(i, row_size, last_match, row_string, column_string);
     }
@@ -288,7 +288,7 @@ static leven_status_t leven_fill_last_match(leven_data_t *data)
     {
         leven_thread_data_t *td = &(tdata[i]);
         td->data = data;
-        td->thread_id = i;
+        td->thread_index = i;
     }
 
     status =
@@ -358,22 +358,22 @@ static void *leven_fill_dist_table_routine(void *arg)
     size_t *last_match = data->last_match;
     uint32_t *dist_table = data->dist_table;
     uint8_t thread_count = data->thread_count;
-    uint8_t thread_id = tdata->thread_id;
+    uint8_t thread_index = tdata->thread_index;
 
     size_t range = row_size / thread_count;
     size_t range_remainder = row_size % thread_count;
 
     size_t start_index;
     size_t end_index;
-    if (thread_id < range_remainder)
+    if (thread_index < range_remainder)
     {
-        start_index = thread_id * (range + 1);
+        start_index = thread_index * (range + 1);
         end_index = start_index + range + 1;
     }
     else
     {
         start_index =
-            range_remainder * (range + 1) + (thread_id - range_remainder) * range;
+            range_remainder * (range + 1) + (thread_index - range_remainder) * range;
         end_index = start_index + range;
     }
 
@@ -416,7 +416,7 @@ static leven_status_t leven_fill_dist_table(leven_data_t *data)
     {
         leven_thread_data_t *td = &(tdata[i]);
         td->data = data;
-        td->thread_id = i;
+        td->thread_index = i;
         td->barrier = &barrier;
     }
 
