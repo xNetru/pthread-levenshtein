@@ -38,9 +38,15 @@ static leven_status_t leven_data_validate(leven_data_t *data)
     return success;
 }
 
+static size_t leven_str_size_to_table_dim(size_t string_size)
+{
+    return string_size + 1;
+}
+
 static size_t leven_dist_table_size(size_t row_string_size, size_t column_string_size)
 {
-    return (row_string_size + 1) * (column_string_size + 1);
+    return leven_str_size_to_table_dim(row_string_size) *
+           leven_str_size_to_table_dim(column_string_size);
 }
 
 static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
@@ -123,9 +129,9 @@ static uint32_t leven_compute_for_index_single(const uint32_t *dist_table, const
 static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
 {
     const char *row_string = data->row_string;
-    size_t row_size = data->row_string_size + 1;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
     const char *column_string = data->column_string;
-    size_t column_size = data->column_string_size + 1;
+    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     uint32_t *dist_table = data->dist_table;
 
     for (size_t j = 0; j < row_size; j++)
@@ -251,8 +257,8 @@ static void *leven_fill_last_match_routine(void *arg)
     leven_data_t *data = tdata->data;
     const char *row_string = data->row_string;
     const char *column_string = data->column_string;
-    size_t row_size = data->row_string_size + 1;
-    size_t column_size = data->column_string_size + 1;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
+    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     size_t *last_match = data->last_match;
     uint8_t thread_count = data->thread_count;
 
@@ -347,8 +353,8 @@ static void *leven_fill_dist_table_routine(void *arg)
 
     const char *row_string = data->row_string;
     const char *column_string = data->column_string;
-    size_t row_size = data->row_string_size + 1;
-    size_t column_size = data->column_string_size + 1;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
+    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     size_t *last_match = data->last_match;
     uint32_t *dist_table = data->dist_table;
     uint8_t thread_count = data->thread_count;
@@ -385,7 +391,7 @@ static leven_status_t leven_fill_dist_table(leven_data_t *data)
 {
     // truncate number of threads to at most row size
     uint8_t thread_count_backup = data->thread_count;
-    size_t row_size = data->row_string_size + 1;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
     uint8_t thread_count = MIN(row_size, thread_count_backup);
     data->thread_count = thread_count;
 
@@ -443,8 +449,8 @@ static leven_status_t leven_compute_dist_multi(size_t *result, leven_data_t *dat
     }
 
     uint32_t *dist_table = data->dist_table;
-    size_t row_size = data->row_string_size + 1;
-    size_t column_size = data->column_string_size + 1;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
+    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     size_t last_ind = row_size * column_size - 1;
     *result = dist_table[last_ind];
 
