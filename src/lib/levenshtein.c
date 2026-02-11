@@ -117,12 +117,12 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string,
 
 void leven_data_destroy(leven_data_t *data)
 {
-    if (!data || !data->dist_table)
+    if (!data)
     {
         return;
     }
 
-    free((void *)(data->dist_table));
+    free((void *)data->dist_table);
 }
 
 // leven dist single threaded
