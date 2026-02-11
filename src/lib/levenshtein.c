@@ -55,6 +55,26 @@ static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
 }
 
 // leven data
+static void leven_multithread_data_adjust(leven_data_t *data)
+{
+    size_t row_string_size = data->row_string_size;
+    size_t column_string_size = data->column_string_size;
+
+    // swap strings so that the row is not shorter than column
+    if (row_string_size < column_string_size)
+    {
+        const char *row_string = data->row_string;
+        const char *column_string = data->column_string;
+        data->row_string = column_string;
+        data->column_string = row_string;
+        data->row_string_size = column_string_size;
+        data->column_string_size = row_string_size;
+    }
+
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
+    data->thread_count = MIN(row_size, data->thread_count);
+}
+
 static leven_status_t leven_multithread_data_init(leven_data_t *data, uint8_t thread_count)
 {
     data->last_match = NULL;
@@ -77,6 +97,8 @@ static leven_status_t leven_multithread_data_init(leven_data_t *data, uint8_t th
     }
 
     data->last_match = last_match;
+    leven_multithread_data_adjust(data);
+
     return success;
 }
 
@@ -425,11 +447,7 @@ static void *leven_fill_dist_table_routine(void *arg)
 
 static leven_status_t leven_fill_dist_table(leven_data_t *data)
 {
-    // truncate number of threads to at most row size
-    uint8_t thread_count_backup = data->thread_count;
-    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
-    uint8_t thread_count = MIN(row_size, thread_count_backup);
-    data->thread_count = thread_count;
+    uint8_t thread_count = data->thread_count;
 
     leven_thread_data_t *tdata =
         (leven_thread_data_t *)malloc(sizeof(leven_thread_data_t) * thread_count);
@@ -465,7 +483,6 @@ static leven_status_t leven_fill_dist_table(leven_data_t *data)
     }
 
 cleanup:
-    data->thread_count = thread_count_backup;
     free((void *)tdata);
 
     return status;
