@@ -55,7 +55,8 @@ static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
 }
 
 // leven data
-leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const char *column_string, uint8_t thread_count)
+leven_status_t leven_data_init(leven_data_t *data, const char *row_string,
+                               const char *column_string, uint8_t thread_count)
 {
     if (!data || !row_string || !column_string)
     {
@@ -111,7 +112,9 @@ void leven_data_destroy(leven_data_t *data)
 }
 
 // leven dist single threaded
-static uint32_t leven_compute_for_index_single(const uint32_t *dist_table, const char *row_string, const char *column_string, size_t i, size_t j, size_t row_size)
+static uint32_t leven_compute_for_index_single(const uint32_t *dist_table, const char *row_string,
+                                               const char *column_string, size_t i, size_t j,
+                                               size_t row_size)
 {
     size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
     size_t ind10 = leven_2d_to_1d_index(i - 1, j, row_size);
@@ -147,7 +150,9 @@ static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *da
         for (size_t j = 1; j < row_size; j++)
         {
             ind = leven_2d_to_1d_index(i, j, row_size);
-            dist_table[ind] = leven_compute_for_index_single(dist_table, row_string, column_string, i, j, row_size);
+            dist_table[ind] =
+                leven_compute_for_index_single(dist_table, row_string,
+                                               column_string, i, j, row_size);
         }
     }
 
@@ -191,7 +196,9 @@ typedef struct leven_thread_data
     pthread_barrier_t *barrier;
 } leven_thread_data_t;
 
-static leven_status_t leven_dispatch_threads(leven_data_t *data, typeof(void *(void *)) *routine, leven_thread_data_t *tdata)
+static leven_status_t leven_dispatch_threads(leven_data_t *data,
+                                             typeof(void *(void *)) *routine,
+                                             leven_thread_data_t *tdata)
 {
     uint8_t thread_count = data->thread_count;
 
@@ -344,8 +351,7 @@ void leven_fill_dist_table_row(size_t i, const char *row_string, const char *col
 }
 
 static void leven_compute_thread_subrange(size_t total_range, uint8_t thread_index,
-                                          uint8_t thread_count, size_t *start,
-                                          size_t *end)
+                                          uint8_t thread_count, size_t *start, size_t *end)
 {
     size_t subrange_size = total_range / thread_count;
     size_t subrange_remainder = total_range % thread_count;
@@ -359,8 +365,9 @@ static void leven_compute_thread_subrange(size_t total_range, uint8_t thread_ind
     }
     else
     {
-        start_tmp = subrange_remainder * (subrange_size + 1) +
-                    (thread_index - subrange_remainder) * subrange_size;
+        start_tmp =
+            subrange_remainder * (subrange_size + 1) +
+            (thread_index - subrange_remainder) * subrange_size;
         end_tmp = start_tmp + subrange_size;
     }
 
@@ -394,9 +401,8 @@ static void *leven_fill_dist_table_routine(void *arg)
 
     for (size_t i = 0; i < column_size; i++)
     {
-        leven_fill_dist_table_row(i, row_string, column_string,
-                                  row_size, dist_table, last_match,
-                                  barrier, start_index, end_index);
+        leven_fill_dist_table_row(i, row_string, column_string, row_size, dist_table,
+                                  last_match, barrier, start_index, end_index);
     }
 
     return NULL;
