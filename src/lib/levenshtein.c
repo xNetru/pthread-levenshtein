@@ -132,8 +132,8 @@ static uint32_t leven_compute_for_index_single(const uint32_t *dist_table, const
 static leven_status_t leven_compute_dist_single(size_t *result, leven_data_t *data)
 {
     const char *row_string = data->row_string;
-    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
     const char *column_string = data->column_string;
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
     size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     uint32_t *dist_table = data->dist_table;
 
