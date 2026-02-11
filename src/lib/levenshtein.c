@@ -55,6 +55,31 @@ static size_t leven_2d_to_1d_index(size_t row, size_t column, size_t row_size)
 }
 
 // leven data
+static leven_status_t leven_multithread_data_init(leven_data_t *data, uint8_t thread_count)
+{
+    data->last_match = NULL;
+
+    if (1 == thread_count)
+    {
+        return success;
+    }
+
+    if (0 == thread_count)
+    {
+        thread_count = PL_DEFAULT_THREAD_COUNT;
+    }
+
+    size_t last_match_size = leven_dist_table_size(data->row_string_size, data->column_string_size);
+    size_t *last_match = (size_t *)malloc(sizeof(size_t) * last_match_size);
+    if (!last_match)
+    {
+        return malloc_failure;
+    }
+
+    data->last_match = last_match;
+    return success;
+}
+
 leven_status_t leven_data_init(leven_data_t *data, const char *row_string,
                                const char *column_string, uint8_t thread_count)
 {
@@ -74,31 +99,20 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string,
         return malloc_failure;
     }
 
-    size_t *last_match = NULL;
-    if (0 == thread_count)
-    {
-        thread_count = PL_DEFAULT_THREAD_COUNT;
-    }
-
-    if (thread_count > 1)
-    {
-        last_match = (size_t *)malloc(sizeof(size_t) * dist_table_count);
-        if (!last_match)
-        {
-            free(dist_table);
-            return malloc_failure;
-        }
-    }
-
     data->row_string = row_string;
     data->column_string = column_string;
     data->dist_table = dist_table;
-    data->last_match = last_match;
     data->row_string_size = row_string_size;
     data->column_string_size = column_string_size;
     data->thread_count = thread_count;
 
-    return success;
+    leven_status_t status = leven_multithread_data_init(data, thread_count);
+    if (success != status)
+    {
+        free(dist_table);
+    }
+
+    return status;
 }
 
 void leven_data_destroy(leven_data_t *data)
