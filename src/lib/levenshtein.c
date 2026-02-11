@@ -123,6 +123,7 @@ void leven_data_destroy(leven_data_t *data)
     }
 
     free((void *)data->dist_table);
+    free((void *)data->last_match);
 }
 
 // leven dist single threaded
