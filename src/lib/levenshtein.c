@@ -113,8 +113,8 @@ leven_status_t leven_data_init(leven_data_t *data, const char *row_string,
     size_t row_string_size = strlen(row_string);
     size_t column_string_size = strlen(column_string);
 
-    size_t dist_table_count = leven_dist_table_size(row_string_size, column_string_size);
-    uint32_t *dist_table = (uint32_t *)malloc(sizeof(uint32_t) * dist_table_count);
+    size_t dist_table_size = leven_dist_table_size(row_string_size, column_string_size);
+    uint32_t *dist_table = (uint32_t *)malloc(sizeof(uint32_t) * dist_table_size);
 
     if (!dist_table)
     {
