@@ -197,10 +197,11 @@ static leven_status_t leven_dispatch_threads(leven_data_t *data, typeof(void *(v
 
     pthread_t *tid = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
 
+    leven_status_t status = success;
     if (!tid)
     {
-        free(tid);
-        return malloc_failure;
+        status = malloc_failure;
+        goto cleanup;
     }
 
     for (uint8_t i = 0; i < thread_count; i++)
@@ -209,15 +210,17 @@ static leven_status_t leven_dispatch_threads(leven_data_t *data, typeof(void *(v
         {
             leven_cancel_threads(tid, i);
             leven_join_threads(tid, i);
-            return pthread_error;
+            status = pthread_error;
+            goto cleanup;
         }
     }
 
     leven_join_threads(tid, thread_count);
 
+cleanup:
     free((void *)tid);
 
-    return success;
+    return status;
 }
 
 static void leven_fill_last_match_row(int i, size_t row_size, size_t *last_match,
