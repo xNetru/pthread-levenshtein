@@ -27,7 +27,6 @@ typedef enum leven_status
     malloc_failure,
     pthread_error,
     pthread_barrier_error,
-    error,
 } leven_status_t;
 
 leven_status_t leven_data_init(leven_data_t *data, const char *row_string, const char *column_string, uint8_t thread_count);
