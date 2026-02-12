@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <pthread.h>
 
+#define CHAR_RANGE (1 << (8 * sizeof(char)))
+
 #define MIN(x, y) (x < y ? x : y)
 
 // general helpers
@@ -89,7 +91,11 @@ static leven_status_t leven_multithread_data_init(leven_data_t *data, uint8_t th
         thread_count = PL_DEFAULT_THREAD_COUNT;
     }
 
-    size_t last_match_size = leven_dist_table_size(data->row_string_size, data->column_string_size);
+    leven_multithread_data_adjust(data);
+
+    size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
+    // Declare a row for each character
+    size_t last_match_size = row_size * CHAR_RANGE;
     size_t *last_match = (size_t *)malloc(sizeof(size_t) * last_match_size);
     if (!last_match)
     {
@@ -97,7 +103,6 @@ static leven_status_t leven_multithread_data_init(leven_data_t *data, uint8_t th
     }
 
     data->last_match = last_match;
-    leven_multithread_data_adjust(data);
 
     return success;
 }
@@ -267,29 +272,17 @@ cleanup:
     return status;
 }
 
-static void leven_fill_last_match_row(int i, size_t row_size, size_t *last_match,
-                                      const char *row_string, const char *column_string)
+static void leven_fill_last_match_row(unsigned char c, size_t row_size, size_t *last_match,
+                                      const char *row_string)
 {
-    if (0 == i)
+    size_t i = (size_t)c;
+    size_t ind = leven_2d_to_1d_index(i, 0, row_size);
+    last_match[ind] = 0;
+    for (size_t j = 1; j < row_size; j++)
     {
-        for (size_t j = 0; j < row_size; j++)
-        {
-            size_t ind = leven_2d_to_1d_index(i, j, row_size);
-            last_match[ind] = 0;
-        }
-    }
-    else
-    {
-        size_t ind = leven_2d_to_1d_index(i, 0, row_size);
-        last_match[ind] = 0;
-        char column_char = column_string[i - 1];
-        for (size_t j = 1; j < row_size; j++)
-        {
-            ind = leven_2d_to_1d_index(i, j, row_size);
-            size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
-            char row_char = row_string[j - 1];
-            last_match[ind] = column_char == row_char ? j : last_match[ind01];
-        }
+        ind = leven_2d_to_1d_index(i, j, row_size);
+        size_t ind01 = leven_2d_to_1d_index(i, j - 1, row_size);
+        last_match[ind] = c == row_string[j - 1] ? j : last_match[ind01];
     }
 }
 
@@ -303,15 +296,13 @@ static void *leven_fill_last_match_routine(void *arg)
 
     leven_data_t *data = tdata->data;
     const char *row_string = data->row_string;
-    const char *column_string = data->column_string;
     size_t row_size = leven_str_size_to_table_dim(data->row_string_size);
-    size_t column_size = leven_str_size_to_table_dim(data->column_string_size);
     size_t *last_match = data->last_match;
     uint8_t thread_count = data->thread_count;
 
-    for (size_t i = tdata->thread_index; i < column_size; i += thread_count)
+    for (size_t i = tdata->thread_index; i < CHAR_RANGE; i += thread_count)
     {
-        leven_fill_last_match_row(i, row_size, last_match, row_string, column_string);
+        leven_fill_last_match_row((unsigned char)i, row_size, last_match, row_string);
     }
 
     return NULL;
@@ -377,7 +368,9 @@ void leven_fill_dist_table_row(size_t i, const char *row_string, const char *col
             else
             {
                 size_t min_dist = MIN(dist_table[ind11], dist_table[ind10]) + 1;
-                size_t k = j - last_match[ind];
+                char column_char = column_string[i - 1];
+                size_t lm_ind = leven_2d_to_1d_index(column_char, j, row_size);
+                size_t k = j - last_match[lm_ind];
                 size_t ind1k1 = leven_2d_to_1d_index(i - 1, j - k - 1, row_size);
                 dist_table[ind] = MIN(dist_table[ind1k1] + k, min_dist);
             }
